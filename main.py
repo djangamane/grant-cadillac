@@ -100,9 +100,14 @@ def fetch_rss_feeds():
 
     return grants
 
-@app.route('/run', methods=['GET'])
+@app.route("/", methods=["GET"])
+def home():
+    """Homepage route to check if API is running."""
+    return jsonify({"message": "Grant Scraper API is running! Use /run to fetch grants."})
+
+@app.route("/run", methods=["GET"])
 def run_scraper():
-    """API Endpoint to trigger the grant scraper."""
+    """Runs the full scraping process and returns JSON data."""
     all_grants = []
 
     # Scrape Funds for NGOs
@@ -116,11 +121,7 @@ def run_scraper():
     # Fetch RSS feeds
     all_grants.extend(fetch_rss_feeds())
 
-    return jsonify({
-        "status": "success",
-        "grants_found": len(all_grants),
-        "grants": all_grants
-    })
+    return jsonify(all_grants)  # Return JSON response instead of saving to a file
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=10000)  # Render requires ports 10000+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=10000)  # Runs Flask server on Render
