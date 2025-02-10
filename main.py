@@ -1,8 +1,11 @@
+from flask import Flask, jsonify
 import requests
 from bs4 import BeautifulSoup
 import json
 import time
 import feedparser
+
+app = Flask(__name__)
 
 # RSS Feeds for grant monitoring (Google Alerts)
 RSS_FEEDS = [
@@ -10,6 +13,7 @@ RSS_FEEDS = [
     "https://www.google.com/alerts/feeds/15471598175210223981/1413775523916636761",
     "https://www.google.com/alerts/feeds/15471598175210223981/13238716951020665409"
 ]
+
 # URLs for Funds for NGOs categories
 FUNDS_FOR_NGOS_CATEGORIES = [
     "https://www2.fundsforngos.org/category/civil-society/",
@@ -96,8 +100,9 @@ def fetch_rss_feeds():
 
     return grants
 
-def main():
-    """Main function to scrape and save grant opportunities."""
+@app.route('/run', methods=['GET'])
+def run_scraper():
+    """API Endpoint to trigger the grant scraper."""
     all_grants = []
 
     # Scrape Funds for NGOs
@@ -111,12 +116,11 @@ def main():
     # Fetch RSS feeds
     all_grants.extend(fetch_rss_feeds())
 
-    # Save grants to a JSON file
-    filename = f"grants_found_{time.strftime('%Y%m%d')}.json"
-    with open(filename, "w", encoding="utf-8") as f:
-        json.dump(all_grants, f, indent=4)
+    return jsonify({
+        "status": "success",
+        "grants_found": len(all_grants),
+        "grants": all_grants
+    })
 
-    print(f"✅ Grants saved to {filename}")
-
-if __name__ == "__main__":
-    main()
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=10000)  # Render requires ports 10000+
