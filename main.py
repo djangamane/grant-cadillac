@@ -1,11 +1,15 @@
-from flask import Flask, jsonify, send_file
+from flask import Flask, jsonify
 import requests
 from bs4 import BeautifulSoup
 import json
 import time
 import feedparser
+import os
 
 app = Flask(__name__)
+
+# Path where JSON file will be saved
+GRANTS_FILE = "/opt/render/project/src/grants.json"
 
 # RSS Feeds for grant monitoring (Google Alerts)
 RSS_FEEDS = [
@@ -117,20 +121,21 @@ def run_scraper():
     all_grants.extend(fetch_rss_feeds())
 
     # Save grants to a JSON file
-    filename = "grants.json"
-    with open(filename, "w", encoding="utf-8") as f:
+    with open(GRANTS_FILE, "w", encoding="utf-8") as f:
         json.dump(all_grants, f, indent=4)
 
-    print(f"✅ Grants saved to {filename}")
-    return jsonify({"message": "Grants scraped and saved successfully", "file": filename})
+    return jsonify({"message": "✅ Grants scraped and saved successfully", "file": GRANTS_FILE})
 
 @app.route("/grants", methods=["GET"])
 def get_grants():
-    """Serves the saved JSON grants file."""
-    try:
-        return send_file("grants.json", as_attachment=False, mimetype="application/json")
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    """Returns the saved grants JSON file."""
+    if not os.path.exists(GRANTS_FILE):
+        return jsonify({"error": "No grants data found. Run /run first."}), 500
+
+    with open(GRANTS_FILE, "r", encoding="utf-8") as f:
+        grants = json.load(f)
+
+    return jsonify(grants)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)  # Runs Flask server on Render
