@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, send_file
 import requests
 from bs4 import BeautifulSoup
 import json
@@ -100,14 +100,9 @@ def fetch_rss_feeds():
 
     return grants
 
-@app.route("/", methods=["GET"])
-def home():
-    """Homepage route to check if API is running."""
-    return jsonify({"message": "Grant Scraper API is running! Use /run to fetch grants."})
-
 @app.route("/run", methods=["GET"])
 def run_scraper():
-    """Runs the full scraping process and returns JSON data."""
+    """Runs the full scraping process and saves grants to a JSON file."""
     all_grants = []
 
     # Scrape Funds for NGOs
@@ -121,7 +116,21 @@ def run_scraper():
     # Fetch RSS feeds
     all_grants.extend(fetch_rss_feeds())
 
-    return jsonify(all_grants)  # Return JSON response instead of saving to a file
+    # Save grants to a JSON file
+    filename = "grants.json"
+    with open(filename, "w", encoding="utf-8") as f:
+        json.dump(all_grants, f, indent=4)
+
+    print(f"✅ Grants saved to {filename}")
+    return jsonify({"message": "Grants scraped and saved successfully", "file": filename})
+
+@app.route("/grants", methods=["GET"])
+def get_grants():
+    """Serves the saved JSON grants file."""
+    try:
+        return send_file("grants.json", as_attachment=False, mimetype="application/json")
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)  # Runs Flask server on Render
